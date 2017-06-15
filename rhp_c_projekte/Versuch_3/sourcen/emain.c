@@ -40,8 +40,8 @@ typedef struct{
 uhrzeit;
 
 uhrzeit akt_zeit = {0,0,0};
-uhrzeit hoch_zeit = {07,15,00};
-uhrzeit runter_zeit = {19,15,00};
+uhrzeit hoch_zeit = {0,1,0};
+uhrzeit runter_zeit = {0,1,55};
 
 
 
@@ -65,18 +65,18 @@ void steuerungsfunktion    (	USHORT ist_oben, USHORT ist_unten,
 
 			// 8.)    Eingabesignale auswerten und Zustandswechsel herbei fuehren
 			//         Ein IF je Pfeil
-            if (  (ist_unten == 0) && (nach_unten == 1) && (nach_oben == 0) || (nach_unten_wegen_zeit != 0)) {
+            if ( ((ist_unten == 0) && (nach_unten == 1) && (nach_oben == 0)) || (nach_unten_wegen_zeit == 1)) {
 				*p_state = runter; // Wechsel in den Zustand "runter"
 			}
-            if (  (ist_oben == 0) && (nach_oben == 1) || (nach_oben_wegen_zeit != 0)){
+            if (  ((ist_oben == 0) && (nach_oben == 1)) || (nach_oben_wegen_zeit == 1)){
 				*p_state = hoch;  // Wechsel in den Zustand "hoch"
 			}
 			
 			// Diese if-Anweisung kann entfallen, da sie cstate nicht veraendert. 
-			if ( !(    ((ist_unten == 0) && (nach_unten == 1) && (nach_oben == 0)) 
+           /* if ( !(    ((ist_unten == 0) && (nach_unten == 1) && (nach_oben == 0))
                     || ((ist_oben == 0) && (nach_oben == 1)) || ((nach_unten_wegen_zeit == 0) && (nach_oben_wegen_zeit == 0)))  ) {   // add
 				*p_state = steht; // Bleibe im Zustand "steht"
-			} 
+            } */
 			break;
 
 		case runter:
@@ -124,12 +124,12 @@ void steuerungsfunktion    (	USHORT ist_oben, USHORT ist_unten,
 
 //Interrupt Service Routine
 
-#define ZT_MAXW 3 //20
-#define SS_MAXW 3 //60
-#define MM_MAXW 3 //60
-#define HH_MAXW 3 //24
+#define ZT_MAXW 2 //20
+#define SS_MAXW 60 //60
+#define MM_MAXW 2 //60
+#define HH_MAXW 1 //24
 
-unsigned long int zt=0, hh=0, mm=0, ss=0;
+unsigned long int zt=0, hh=0, mm=01, ss=45;
 
 timer1_oco1_isr(){
     unsigned char stringbuf[100];
@@ -187,6 +187,7 @@ void emain(void* arg)
 	USHORT		input, output, last_output;
 
 
+
 	INIT_BM_WITH_REGISTER_UI;	// Nur fuer Simulation
 
 
@@ -194,16 +195,14 @@ void emain(void* arg)
 	io_out16(DIR1, 0xFF00); // Ausgang: Bits 15 bis 8   Eingang: Bits 7 bis 0 
 
 	// 2.)	 Definition des Startzustandes. Entspricht dem asynchronen Reset in VHDL.
-	cstate = runter;
+    cstate = steht;
 
 	// 3.) Unendliche Schleife. Ein Schleifendurchlauf entspricht einem Zyklus des Automaten
 	while (1) { 
 
 		SYNC_SIM; // Nur fuer Simulation
         unsigned char a,b,c;
-        a= akt_zeit.hh;
-        b= akt_zeit.mm;
-        c= akt_zeit.ss;
+
 
 		// 4.)	Einlesen der Eingabesignale einmal je Zyklus
 		input = io_in16(IN1);
@@ -221,6 +220,10 @@ void emain(void* arg)
 		nach_unten = (input >> BIT_POS_NACH_UNTEN) & 0x01;
 		
         timer1_oco1_isr();
+
+        a= akt_zeit.hh;
+        b= akt_zeit.mm;
+        c= akt_zeit.ss;
 
         if(akt_zeit.hh==hoch_zeit.hh&&akt_zeit.mm==hoch_zeit.mm&&akt_zeit.ss==hoch_zeit.ss){
             nach_oben_wegen_zeit=1;
