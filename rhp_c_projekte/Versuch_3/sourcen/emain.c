@@ -4,10 +4,10 @@
 // Bedingte Compilierung 
 // Es darf immer nur ein "define" aktive, d.h. nicht auskommentiert, sein.
 //
-#define V3_Aufgabe_1	
+#define V3_Aufgabe_1
 //#define V3_Aufgabe_2_und_3
 //#define nachrichtenempfang_ueber_ports					
-//#define timer_als_taktsignalgenerator					
+//#define timer_als_taktsignalgenerator
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -120,11 +120,45 @@ void steuerungsfunktion    (	USHORT ist_oben, USHORT ist_unten,
 	} // end switch	
 } // end steuerungsfunktion()
 
+/*void timer1_init()
+{
+    /*	Zur Berechnung der Werte fuer den Prescaler und den Compare-Match:
+        Bei einer Frequenz von 4 Mhz zaehlt der Timer mit einem Takt von 0,25us.
+        Er kann mit seinen 65536 moeglichen Zaehlstaenden eine maximale Interrupt-Periode von 65536 * 0,25us = 16384us realisieren.
+        Dies ist zu schnell. => Der Zaheler muss mittels des Prescalers langsamer eingestellt werden.
+        Die ideale Untersetzung waere  50000us / 16384us = 3,0517.
+        Da es diese Unterssetzung (Prescaler-Wert) nicht gibt waehlen wir den naechst groesseren Wert also 8.
+        Der Zaehler zaehlt jetzt mit einem Takt vom 2us. => Die Interrupts haben bei einem Compare-Match-Wert von 65535
+        eine Periode von 131072 us.Der Compare-Match-Wert muss auf 50000us/131072us*65536us = 25000 eingestellt werden.
 
 
+    unsigned short buf = 0;
+
+    // TCRA1
+    // Clock Source auf intern/8 Prescaler
+    // Timer Modus Clear-Timer-On-Compare-Match
+    buf = (1 << PS11) | (1 << TM10);
+    io_out16(TCRA1, buf);
+
+    // TCRB1
+    // Counter Enable
+    buf = (1 <<CE1);
+    io_out16(TCRB1, buf);
+
+    // TIMR1
+    // Compare Match Interrupt enable
+    buf = (1 << OCIE1);
+    io_out16(TIMR1, buf);
+
+    // CMPA1
+    // Compare Match Register auf ...
+    buf = 5000;
+    io_out16(CMPA1, buf);
+}
+*/
 //Interrupt Service Routine
 
-#define ZT_MAXW 2 //20
+#define ZT_MAXW 20 //20
 #define SS_MAXW 60 //60
 #define MM_MAXW 2 //60
 #define HH_MAXW 1 //24
@@ -187,9 +221,34 @@ void emain(void* arg)
 	USHORT		input, output, last_output;
 
 
+    unsigned short buf = 0;
+    unsigned char stringbuf[100];
+
+    INIT_BM_WITH_REGISTER_UI; // Nur zur Simulation
+/*
+    // Zur Sicherheit vor Initialisierung den Interupt des PIC generell deaktivieren
+    buf = io_in16(PICC);
+    buf = buf &  ~(1 << PICE);
+    io_out16(PICC, buf);
+
+    // Timer 1 initialisieren
+    timer1_init();
+
+    // ISR registrieren
+    setInterruptHandler(IVN_OC1, timer1_oco1_isr);
+
+    // Uhrzeiterfragen ohne weitere Ueberpruefung
+    putstring("Bitte die aktuelle Uhrzeit im Format hh:mm:ss eingeben\n");
+    getstring(stringbuf);
+    sscanf(stringbuf,"%d:%d:%d",&hh, &mm, &ss);
+
+    // Interrupt des PIC jetzt zulassen
+    buf = buf | (1 << PICE);
+    io_out16(PICC, buf);
+
 
 	INIT_BM_WITH_REGISTER_UI;	// Nur fuer Simulation
-
+*/
 
 	// 1.)	Hardware konfigurieren
 	io_out16(DIR1, 0xFF00); // Ausgang: Bits 15 bis 8   Eingang: Bits 7 bis 0 
@@ -218,9 +277,9 @@ void emain(void* arg)
 
 		// extrahieren von "nach_unten" (BIT_POS_NACH_UNTEN)
 		nach_unten = (input >> BIT_POS_NACH_UNTEN) & 0x01;
-		
-        timer1_oco1_isr();
 
+
+        timer1_oco1_isr();
         a= akt_zeit.hh;
         b= akt_zeit.mm;
         c= akt_zeit.ss;
@@ -236,6 +295,7 @@ void emain(void* arg)
         }else{
             nach_unten_wegen_zeit=0;
         }
+
 
 		// Aufruf der Steuerungsfunktion
 		steuerungsfunktion    (	ist_oben, ist_unten, nach_oben, nach_unten,
