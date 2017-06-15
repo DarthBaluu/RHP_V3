@@ -122,6 +122,51 @@ void steuerungsfunktion    (	USHORT ist_oben, USHORT ist_unten,
 
 
 
+//Interrupt Service Routine
+
+#define ZT_MAXW 3 //20
+#define SS_MAXW 3 //60
+#define MM_MAXW 3 //60
+#define HH_MAXW 3 //24
+
+unsigned long int zt=0, hh=0, mm=0, ss=0;
+
+timer1_oco1_isr(){
+    unsigned char stringbuf[100];
+    unsigned short int buf;
+    zt++;
+
+    if(zt==ZT_MAXW){
+        zt=0;
+        ss++;
+    }
+
+    if(ss==SS_MAXW){
+        ss=0;
+        mm++;
+    }
+
+    if(mm==MM_MAXW){
+        mm=0;
+        hh++;
+    }
+
+    if(hh==HH_MAXW){
+        hh=0;
+    }
+
+    akt_zeit.hh = hh;
+    akt_zeit.mm = mm;
+    akt_zeit.ss = ss;
+    sprintf(stringbuf,"zt=%d Uhrzeit: %d:%d:%d\n",zt,hh,mm,ss);
+    putstring(stringbuf); // Bei der Simulation des SimuC fuehrt der Aufruf von putstring() innerhalb einer ISR
+    // ggf. zu einem Dead-Lock . Dies liegt aber nur am Simulator.
+    // Zuruecksetzen des Interrupt-Flags
+    buf = io_in16(TIFR1);
+    buf = buf & ~(1 << OCIF1);
+    io_out16(TIFR1, buf);
+}
+
 
 void emain(void* arg) 
 {
@@ -155,6 +200,10 @@ void emain(void* arg)
 	while (1) { 
 
 		SYNC_SIM; // Nur fuer Simulation
+        unsigned char a,b,c;
+        a= akt_zeit.hh;
+        b= akt_zeit.mm;
+        c= akt_zeit.ss;
 
 		// 4.)	Einlesen der Eingabesignale einmal je Zyklus
 		input = io_in16(IN1);
@@ -171,6 +220,8 @@ void emain(void* arg)
 		// extrahieren von "nach_unten" (BIT_POS_NACH_UNTEN)
 		nach_unten = (input >> BIT_POS_NACH_UNTEN) & 0x01;
 		
+        timer1_oco1_isr();
+
         if(akt_zeit.hh==hoch_zeit.hh&&akt_zeit.mm==hoch_zeit.mm&&akt_zeit.ss==hoch_zeit.ss){
             nach_oben_wegen_zeit=1;
         }else{
