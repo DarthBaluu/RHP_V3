@@ -39,9 +39,12 @@ typedef struct{
     unsigned char ss;}
 uhrzeit;
 
-uhrzeit akt_zet;
-uhrzeit hoch_zeit;
-uhrzeit runter_zeit;
+uhrzeit akt_zeit = {0,0,0};
+uhrzeit hoch_zeit = {07,15,00};
+uhrzeit runter_zeit = {19,15,00};
+
+
+
 
 void steuerungsfunktion    (	USHORT ist_oben, USHORT ist_unten, 
 						USHORT nach_oben, USHORT nach_unten, 
@@ -150,7 +153,7 @@ void emain(void* arg)
 
 	// 3.) Unendliche Schleife. Ein Schleifendurchlauf entspricht einem Zyklus des Automaten
 	while (1) { 
-	
+
 		SYNC_SIM; // Nur fuer Simulation
 
 		// 4.)	Einlesen der Eingabesignale einmal je Zyklus
@@ -168,6 +171,18 @@ void emain(void* arg)
 		// extrahieren von "nach_unten" (BIT_POS_NACH_UNTEN)
 		nach_unten = (input >> BIT_POS_NACH_UNTEN) & 0x01;
 		
+        if(akt_zeit.hh==hoch_zeit.hh&&akt_zeit.mm==hoch_zeit.mm&&akt_zeit.ss==hoch_zeit.ss){
+            nach_oben_wegen_zeit=1;
+        }else{
+            nach_oben_wegen_zeit=0;
+        }
+
+        if(akt_zeit.hh==runter_zeit.hh&&akt_zeit.mm==runter_zeit.mm&&akt_zeit.ss==runter_zeit.ss){
+            nach_unten_wegen_zeit=1;
+        }else{
+            nach_unten_wegen_zeit=0;
+        }
+
 		// Aufruf der Steuerungsfunktion
 		steuerungsfunktion    (	ist_oben, ist_unten, nach_oben, nach_unten,
                             &fahre_nach_oben, &fahre_nach_unten,nach_unten_wegen_zeit,nach_oben_wegen_zeit, &cstate	);
