@@ -15,7 +15,7 @@
 //	Beide Fehler liegen beim Visual-Studio/Visual-Express und ruehren wohl daher, dass die geaenderte Datenbasis 
 //  fuer das Compilieren noch nicht konsistent aufgebaut wurde.
 //	Man muss es dann einfach noch mal versuchen. 
-#define USER_PROG_1		emain
+#define USER_PROG_1		m_emain
 //#define USER_PROG_2		emain_sender
 
 #endif //USER_CONF_H
